@@ -182,7 +182,7 @@ loop
 					l_trg_col_string,
 					l_param);
 					
-					l_arr_col_name := null;  --- обнуляем функции
+					l_arr_col_name := null;  --- обнуляем переменные
 					
 					l_pk_arr_col := null;
 					
