@@ -40,34 +40,37 @@ num_precision int;
 
 l_param text;
 
+l_total_rows bigint;
+
+l_type_load smallint;
+
 begin
 open cur for execute 'select table_name from information_schema.tables
 					  where 1= 1 and
 					  table_schema = ''stg'' and 
                       table_type = ''BASE TABLE'' and 
-                      table_name not like ''%_prt_%'' and 
-                      table_name not like ''%_20%'';';
+                      table_name not like ''%_prt_%'';';
 
 loop
 	    fetch cur into l_table;
 
 		exit when not found;
 
-		select count(*) 
+		select count(*)    --- получаем информацию о наличии таблицы в метаданных
 		into is_true
 		from meta_info.ee_gl_md egm 
 		where src_tbl_name = l_table;
 		
 		if is_true = 0
 			    then	
-			    	select array_agg(column_name::text order by ordinal_position)
+			    	select array_agg(column_name::text order by ordinal_position) --- получаем имена полей таблицы источника
 				    into l_arr_col_name
 				    from information_schema.columns
 					where table_name = l_table and table_schema = 'stg';
 		
-					l_col_string := array_to_string(l_arr_col_name,',');
+					l_col_string := array_to_string(l_arr_col_name,',');  --- преобразуем в строку
 		
-					foreach l_col_trg in array l_arr_col_name loop
+					foreach l_col_trg in array l_arr_col_name loop  --- с помощью цикла получаем типы данных и преобразуем по арх.дизайну для таблицы приемника
 				       
 					    select data_type, character_maximum_length, numeric_precision
 					     into data_trg, char_max, num_precision
@@ -85,7 +88,7 @@ loop
 							else data_trg := 'V';
 						end case;
 			
-						if char_max is null = false
+						if char_max is null = false   
 						or num_precision is null = false
 					  	  then
 					  	   		l_trg_col_string := l_trg_col_string || l_col_trg || ' ' || '[' || data_trg || '(' || coalesce(char_max, num_precision) || ')], ';
@@ -95,9 +98,9 @@ loop
 					  
 					 end loop;
 		
-					 l_trg_col_string := rtrim(l_trg_col_string,', ');
+					 l_trg_col_string := rtrim(l_trg_col_string,', ');  --- преобразуем в строку
 
-					 select array_agg(c.column_name::text)
+					 select array_agg(c.column_name::text)  --- получаем ключи таблицы и дистрибуцию
 					 into l_pk_arr_col
 					 from information_schema.table_constraints tc
 					 join information_schema.constraint_column_usage as ccu using (constraint_schema,constraint_name)
@@ -116,7 +119,7 @@ loop
       						l_pk_col_string := array_to_string(l_pk_arr_col,',');
 					end if;
 
-					select column_name
+					select column_name              --- получаем поля партиции 
 					into l_part_attr
 					from information_schema.constraint_column_usage
 					where 1 = 1
@@ -128,18 +131,8 @@ loop
 		    			then 
 	      	   				l_part_attr := '';
 					end if;
-				
-				
-					--select count(*)
-					--into is_type
-					--from 'stg.' || l_table;
-					--if is_type > 0
-					--then load_type := 2;
-					--else 
-					-- load_type := 1;
-					--end if;
 	       
-				    select pg_catalog.pg_class.reloptions
+				    select pg_catalog.pg_class.reloptions  --- получаем параметры таблицы
 				    into l_param
 					from pg_catalog.pg_class
 				    
@@ -154,7 +147,19 @@ loop
 						    		l_param := '';
 					end if;
 
-					insert
+				
+				    select n_live_tup  from pg_stat_user_tables
+					into l_type_load
+					where schemaname = 'stg' and relname = l_table;  --- определяем тип загрузки таблицы 
+			
+				  
+				   if l_total_rows > 10000
+				   		then l_type_load := 2;
+				   else 
+				   		l_type_load := 1;
+				   end if;
+				   
+					insert            --- заносим данные о таблицы в meta_info.f_ee_gl_md
 						into
 						meta_info.ee_gl_md  (src_tbl_name,
 						src_cols,
@@ -173,11 +178,11 @@ loop
 					l_pk_col_string,
 					l_part_attr,
 					1,
-					1,
+					l_type_load,
 					l_trg_col_string,
 					l_param);
 					
-					l_arr_col_name := null;
+					l_arr_col_name := null;  --- обнуляем функции
 					
 					l_pk_arr_col := null;
 					
@@ -187,7 +192,7 @@ loop
 					
 					l_param := null;
 					
-					rowcount := rowcount + 1;
+					rowcount := rowcount + 1;  --- наполняем счетчик добавленных полей в метаданные
 		end if;
 end loop;
 
