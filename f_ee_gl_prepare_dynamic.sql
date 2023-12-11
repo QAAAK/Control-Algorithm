@@ -8,6 +8,8 @@ AS $$
 	
 	
 	
+	
+	
 
 DECLARE
      l_a_part_col text;  
@@ -56,12 +58,22 @@ begin
           then      
 			l_a_Stmt := 'delete from gl.'||l_a_tablename_trg||' where '||l_a_pk_key||' IN (select '||l_a_pk_key||' from stg.'||l_a_tablename_src||');'
 		    ||chr(10)||'insert into gl.'||l_a_tablename_trg|| ' (' || l_src_cols || ') select ' || l_src_cols || ' from stg.'||l_a_tablename_src||';';
+		   
+       elsif l_a_loadtype = 4
+       	  then 
+       	  			l_a_Stmt := 'delete from gl.'||l_a_tablename_trg||' where '||l_a_pk_key||' IN (select '||l_a_pk_key||' from stg.'||l_a_tablename_src||');'
+		    		||chr(10)||'insert into gl.'||l_a_tablename_trg|| ' (' || l_src_cols || ') select ' || l_src_cols || ' from stg.'||l_a_tablename_src||' 
+					 where w$optype = 0;';
+					perform f_ee_gl_delete_row(p_a_id);
+       	    
        END IF;       
     ELSE   
     	l_a_Stmt := '0';
     END IF;
    return l_a_Stmt;
 END;
+
+
 
 
 
