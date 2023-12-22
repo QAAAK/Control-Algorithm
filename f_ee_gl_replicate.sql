@@ -31,7 +31,7 @@ begin
     begin
    		l_a_StartDt := clock_timestamp();
     	UPDATE meta_info.ee_gl_md
-       	 SET last_load_dttm = l_a_StartDt, last_load_status = 'STARTED', last_load_cnt = 0
+       	 SET last_load_dttm = l_a_StartDt, last_load_status = 'READY', last_load_cnt = 0
 	 	WHERE id=p_a_id;
     end;
    
