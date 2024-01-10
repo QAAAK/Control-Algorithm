@@ -12,6 +12,7 @@ AS $$
 	
 	
 	
+	
 		
 	
 DECLARE     
@@ -47,9 +48,11 @@ BEGIN
 			    and  partitionrangeend like '%' || l_e_dt || '%'
 			    and  schemaname = 'gl'
 			    and tablename = l_a_tablename_trg;
-			if l_count = 0 then
+			if l_count = 0 
+			then
 		    	l_sql :=  'alter table gl.'||l_a_tablename_trg||' add partition start (timestamp '''||l_s_dt::text ||''') inclusive end (timestamp '''||l_e_dt::text ||''') exclusive';
 		        execute l_sql;
+		        exit;
 		    end if;
 		   
 		    
@@ -57,6 +60,7 @@ BEGIN
 	    exception when others then
 	        raise notice '%', l_sql;
 	    	raise notice 'Партиция уже существует, оператор не выполнен: %', l_sql;
+	    	exit;
 	    end;
 	end LOOP;
    return '0';

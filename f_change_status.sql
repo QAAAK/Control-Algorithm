@@ -8,6 +8,8 @@ AS $$
 	
 	
 	
+	
+	
 
 
 declare 
@@ -40,7 +42,7 @@ begin
 			end case;
 		
 		
-			update meta_info.ee_stg_md set last_load_status = l_status, last_load_cnt = p_load_cnt, message_text = p_message
+			update meta_info.ee_stg_md set last_load_status = l_status, last_load_cnt = p_load_cnt, message_text = p_message, last_load_dttm = current_timestamp 
 			where id = l_md_id;
 	
 		
@@ -51,14 +53,23 @@ begin
 
 
 	exception when others then
-    get STACKED diagnostics l_err_text := PG_EXCEPTION_CONTEXT;
-    raise notice 'context: >>%<<', l_err_text; 
+	
+	    get STACKED diagnostics l_err_text := PG_EXCEPTION_CONTEXT;
+	   
+	    perform meta_info.f_log('f_change_status','FAIL',l_err_text); 
+	   
+	    return 'Операция не выполнена';
  	
     end;
+   
+   
+    perform meta_info.f_log('f_change_status','SUCCESFUL','Операция выполнена');
    
     return 'Операция выполнена';
 end;
 	
+
+
 
 
 

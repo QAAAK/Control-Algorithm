@@ -11,6 +11,7 @@ AS $$
 	
 	
 	
+	
 
 DECLARE
      l_a_part_col text;  
@@ -29,7 +30,9 @@ begin
 	from  meta_info.ee_gl_md
 	where 1=1
 	and id = p_a_id;
- 
+
+
+
      EXECUTE 'SELECT count(*) FROM ' || 'stg.' || lower(l_a_tablename_src) || ' LIMIT 1'
       into strict l_a_cnt;    
     IF l_a_cnt > 0
@@ -71,8 +74,12 @@ begin
     ELSE   
     	l_a_Stmt := '0';
     END IF;
+   
+   
+   perform meta_info.f_log('f_ee_prepare_dynamic','SUCCESFUL',l_a_Stmt);
    return l_a_Stmt;
 END;
+
 
 
 

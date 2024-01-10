@@ -7,6 +7,8 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_replicate(p_a_id numeric)
 AS $$
 	
 	
+	
+	
 
 DECLARE
       l_a_PartCol text;
@@ -53,6 +55,8 @@ begin
     UPDATE meta_info.ee_gl_md
        	 SET last_load_dttm = l_a_StartDt, last_load_status = 'SUCCESSFUL', last_load_cnt = l_a_Cnt
 	 WHERE id=p_a_id;
+	
+	perform meta_info.f_log('f_ee_gl_replicate','SUCCESFUL','Операция выполнена');
 	return l_a_Cnt;
 
 
@@ -65,9 +69,13 @@ exception when others then null;
     UPDATE meta_info.ee_gl_md
        	 SET last_load_dttm = l_a_StartDt, last_load_status = 'FAIL', last_load_cnt = l_a_Cnt, message_text = l_err_text
 	 WHERE id=p_a_id;
+	
+	perform meta_info.f_log('f_ee_gl_replicate','FAIL', l_err_text);
 	return -1;
 raise;
 END;
+
+
 
 
 
