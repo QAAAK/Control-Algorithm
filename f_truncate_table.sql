@@ -8,9 +8,36 @@ AS $$
 	
 	
 	
+	
+	
+	
+/* f_truncate_table - вспомогательная функция очистки таблицы
+  		   
+   параметры функции:
+   			p_tbl_name - имя таблицы
+   
+   возвращаемое значение: void 
+      
+   Автор: Санталов Д.В. SantalovDV@intech.rshb.ru
+   Дата создания: 05.12.2023
+*/	
+			
+declare	
+	
 begin
-	EXECUTE 'truncate ' || p_tbl_name || ';' ;		
+	
+	-- очищаем таблицу
+	execute 'truncate ' || p_tbl_name || ';' ;
+	--логирование
+	perform meta_info.f_log('f_truncate_table','PASSED','truncate '|| p_tbl_name);
+
 end;
+
+
+
+
+
+
 
 
 
