@@ -71,7 +71,7 @@ begin
 		where id=p_a_id;
 		
 		-- логирование
-		perform meta_info.f_log('f_ee_gl_replicate','PASSED', 'Количество перенесенных - ' || l_a_Cnt);
+		perform meta_info.f_log('f_ee_gl_replicate','PASSED', 'Количество перенесенных строк - ' || l_a_Cnt);
 	
 		return l_a_Cnt;
 
@@ -102,3 +102,9 @@ end;
 
 $$
 EXECUTE ON ANY;
+
+-- Permissions
+
+ALTER FUNCTION meta_info.f_ee_gl_replicate(numeric) OWNER TO drp;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_replicate(numeric) TO public;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_replicate(numeric) TO drp;
