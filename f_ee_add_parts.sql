@@ -9,66 +9,88 @@ AS $$
 	
 	
 	
-	
-	
-	
+
+
+/* f_ee_gl_add_parts - Вспомогательная функция, которая добавляет партицию в таблицу 
+ 					   если данные не входят в диапазон партиций.
+  		   
+   параметры функции:
+   					p_a_id - id таблицы в meta_info.ee_gl_md
+   			
+   возвращаемое значение: результат выполнения функции 
+     
+   Автор: Санталов Д.В. SantalovDV@intech.rshb.ru и Кулагин В.Н. KulaginVN@intech.rshb.ru
+
+   Дата создания: 05.11.2023
+*/	
 	
 		
+declare     
+     cur refcursor; -- курсор
+     l_s_dt date; -- дата начала партиции
+     l_e_dt date; -- дата окончания партиции
+     l_sql text; -- exec запрос
+     l_a_part_col text;  -- поле, по которому производится партицирование
+     l_a_loadtype numeric;  -- тип загрузки
+     l_a_tablename_src text; -- таблица источник
+     l_a_tablename_trg text; -- целевая таблица
+     l_count int; -- переменная количества партиций
+     l_err_text text; -- текст ошибки
+     
+begin
+	--логирование
+	perform meta_info.f_log('f_ee_gl_add_parts','RUNNING','аргументы функции - '|| p_a_id);
 	
-DECLARE     
-     cur refcursor;
-     l_s_dt date;
-     l_e_dt date;
-     l_sql text;
-     l_a_part_col text;  
-     l_a_loadtype numeric;  -- ТИП ЗАГРУЗКИ
-     l_a_tablename_src text; -- ТАБЛИЦА ИСТОЧНИК
-     l_a_tablename_trg text; -- ЦЕЛЕВАЯ ТАБЛИЦА
-     l_count int; -- переменная для количества строк в запросе
-BEGIN
+	-- получаем значения переменных на основе аргумента функции
 	select load_type, src_tbl_name, trg_tbl_name , coalesce(part_key_col, '')
-	INTO l_a_loadtype, l_a_tablename_src,l_a_tablename_trg, l_a_part_col
-	from  meta_info.ee_gl_md
+	  into l_a_loadtype, l_a_tablename_src,l_a_tablename_trg, l_a_part_col
+	  from  meta_info.ee_gl_md
 	where 1=1
-	and id = p_a_id;
+	  and id = p_a_id;
 
-
-
-    OPEN cur FOR EXECUTE 'SELECT date_trunc(''month'',' || l_a_part_col || ') FROM ' || 'stg.' || lower(l_a_tablename_src);
---	        || ' union all select ''2010-01-01''::timestamp union all select ''2023-04-01''::timestamp union all select ''2023-07-01''::timestamp order by dt_end'; --Для отладки
-	LOOP
-	    FETCH cur INTO l_s_dt; 	    
-	    EXIT WHEN NOT FOUND;
+	-- открываем курсор
+    open cur for execute 'select date_trunc(''month'',' || l_a_part_col || ') from ' || 'stg.' || lower(l_a_tablename_src);
+   
+   -- блок кода для добавления партиций 
+	loop
+	    fetch cur into l_s_dt; 	    
+	    exit when not found;
 	    l_e_dt := l_s_dt + interval '1' month;
+	   
 	    begin
-		    	select count(*) 
-				into l_count 
-				from pg_catalog.pg_partitions 
-			    where partitionrangestart like '%' || l_s_dt || '%'  
-			    and  partitionrangeend like '%' || l_e_dt || '%'
-			    and  schemaname = 'gl'
-			    and tablename = l_a_tablename_trg;
+		    
+		    -- получаем количество партиций в заданном диапазоне
+		    select count(*) 
+			  into l_count 
+			  from pg_catalog.pg_partitions 
+			where partitionrangestart like '%' || l_s_dt || '%'  
+			  and  partitionrangeend like '%' || l_e_dt || '%'
+			  and  schemaname = 'gl'
+			  and tablename = l_a_tablename_trg;
+			 
+			--проверка условия с последующим выполнением операции для добавления новой партиции
 			if l_count = 0 
 			then
 		    	l_sql :=  'alter table gl.'||l_a_tablename_trg||' add partition start (timestamp '''||l_s_dt::text ||''') inclusive end (timestamp '''||l_e_dt::text ||''') exclusive';
 		        execute l_sql;
+		        -- логирование 
+		        perform meta_info.f_log('f_ee_gl_add_parts','PASSED','SQL QUERY - '|| l_sql);
 		        exit;
 		    end if;
-		   
-		    
-	        
-	    exception when others then
-	        raise notice '%', l_sql;
-	    	raise notice 'Партиция уже существует, оператор не выполнен: %', l_sql;
-	    	exit;
+		
+		-- обработка исключений
+	    exception 
+	        when others then
+	        	get STACKED diagnostics l_err_text = PG_EXCEPTION_CONTEXT;
+	        	--логирование
+	        	perform meta_info.f_log('f_ee_gl_add_parts','FAIL',l_err_text);
+	    		raise notice 'Партиция уже существует, оператор не выполнен: %', l_sql;
+	    	
+	    
 	    end;
-	end LOOP;
-   return '0';
-END;
-
-
-
-
+	end loop;
+   return l_sql;
+end;
 
 
 
@@ -78,3 +100,10 @@ END;
 
 $$
 EXECUTE ON ANY;
+
+-- Permissions
+
+ALTER FUNCTION meta_info.f_ee_gl_add_parts(numeric) OWNER TO root;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(numeric) TO public;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(numeric) TO root;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(numeric) TO drp_meta_info_w;
