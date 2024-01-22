@@ -89,6 +89,10 @@ begin
 	    
 	    end;
 	end loop;
+
+   -- логирование 
+   perform meta_info.f_log('f_ee_gl_add_parts','PASSED','Operation completed');
+  
    return l_sql;
 end;
 
