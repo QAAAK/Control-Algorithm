@@ -1,7 +1,7 @@
--- DROP FUNCTION meta_info.f_ee_gl_add_parts(numeric);
+-- DROP FUNCTION meta_info.f_ee_gl_add_parts(int4);
 
-CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_add_parts(p_a_id numeric)
-	RETURNS text
+CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_add_parts(p_id int4)
+	RETURNS varchar
 	LANGUAGE plpgsql
 	VOLATILE
 AS $$
@@ -9,93 +9,134 @@ AS $$
 	
 	
 	
-
-
-/* f_ee_gl_add_parts - Вспомогательная функция, которая добавляет партицию в таблицу 
- 					   если данные не входят в диапазон партиций.
-  		   
-   параметры функции:
-   					p_a_id - id таблицы в meta_info.ee_gl_md
-   			
-   возвращаемое значение: результат выполнения функции 
-     
-   Автор: Санталов Д.В. SantalovDV@intech.rshb.ru и Кулагин В.Н. KulaginVN@intech.rshb.ru
-
-   Дата создания: 05.11.2023
-*/	
-	
 		
-declare     
-     cur refcursor; -- курсор
-     l_s_dt date; -- дата начала партиции
-     l_e_dt date; -- дата окончания партиции
-     l_sql text; -- exec запрос
-     l_a_part_col text;  -- поле, по которому производится партицирование
-     l_a_loadtype numeric;  -- тип загрузки
-     l_a_tablename_src text; -- таблица источник
-     l_a_tablename_trg text; -- целевая таблица
-     l_count int; -- переменная количества партиций
-     l_err_text text; -- текст ошибки
-     
-begin
-	--логирование
-	perform meta_info.f_log('f_ee_gl_add_parts','RUNNING','аргументы функции - '|| p_a_id);
 	
-	-- получаем значения переменных на основе аргумента функции
-	select load_type, src_tbl_name, trg_tbl_name , coalesce(part_key_col, '')
-	  into l_a_loadtype, l_a_tablename_src,l_a_tablename_trg, l_a_part_col
-	  from  meta_info.ee_gl_md
-	where 1=1
-	  and id = p_a_id;
+declare
 
-	-- открываем курсор
-    open cur for execute 'select date_trunc(''month'',' || l_a_part_col || ') from ' || 'stg.' || lower(l_a_tablename_src);
-   
-   -- блок кода для добавления партиций 
-	loop
-	    fetch cur into l_s_dt; 	    
-	    exit when not found;
-	    l_e_dt := l_s_dt + interval '1' month;
-	   
-	    begin
-		    
-		    -- получаем количество партиций в заданном диапазоне
-		    select count(*) 
-			  into l_count 
-			  from pg_catalog.pg_partitions 
-			where partitionrangestart like '%' || l_s_dt || '%'  
-			  and  partitionrangeend like '%' || l_e_dt || '%'
-			  and  schemaname = 'gl'
-			  and tablename = l_a_tablename_trg;
-			 
-			--проверка условия с последующим выполнением операции для добавления новой партиции
-			if l_count = 0 
-			then
-		    	l_sql :=  'alter table gl.'||l_a_tablename_trg||' add partition start (timestamp '''||l_s_dt::text ||''') inclusive end (timestamp '''||l_e_dt::text ||''') exclusive';
-		        execute l_sql;
-		        -- логирование 
-		        perform meta_info.f_log('f_ee_gl_add_parts','PASSED','SQL QUERY - '|| l_sql);
-		        exit;
-		    end if;
+	l_sql_query text; -- sql запрос
+	l_a_cnt numeric; -- количество строк для конкретного значения
+	l_value_col text; -- значение поля
+	l_src_tbl_name text; -- имя таблицы-источника 
+	l_trg_tbl_name text; -- имя таблицы-приемника
+	l_part_col text; -- поле по которому создано сегментирование
+	l_err_text text; -- текст ошибки
+	l_part_type text; -- тип сегментирования
+	l_return_message text; -- переменная для возвращаемого значения
+	l_s_dt date; -- дата начала партиции
+	l_e_dt date; -- дата окончания партиции
+	cur refcursor; -- курсор
+
+
+begin 
+	-- логирование
+	perform meta_info.f_log('f_ee_gl_add_parts','RUNNING','аргумент функции - ' || p_id);
+	-- получили значения полей необходимых для патриции
+	select src_tbl_name, trg_tbl_name, part_key_col, part_type
+	 into l_src_tbl_name, l_trg_tbl_name, l_part_col, l_part_type
+	 from meta_info.ee_gl_md egm
+	where id = p_id;
+
+	 --если партицирование имеет тип LIST
+	if l_part_type = 'list'
+		then 
+			-- логирование
+			perform meta_info.f_log('f_ee_gl_add_parts', 'IN PROGRESS','медод партицирования - LIST');
 		
-		-- обработка исключений
-	    exception 
-	        when others then
-	        	get STACKED diagnostics l_err_text = PG_EXCEPTION_CONTEXT;
-	        	--логирование
-	        	perform meta_info.f_log('f_ee_gl_add_parts','FAIL',l_err_text);
-	    		raise notice 'Партиция уже существует, оператор не выполнен: %', l_sql;
-	    	
-	    
-	    end;
-	end loop;
+			-- получаем все уникальные значения поля сегментирования
+			open cur for execute 'select distinct '|| l_part_col || ' from stg.'|| l_src_tbl_name;
+		
+			l_return_message := 'added a list partition';		
+			
+			loop 
+				fetch cur into l_value_col;
+				exit when not found;
+				
+				begin			
+					-- проверка на наличие значения патриции
+					select count(*) 
+					  into l_a_cnt
+					  from pg_catalog.pg_partitions
+					where schemaname = 'gl'
+					  and tablename =  l_trg_tbl_name
+					  and partitionlistvalues like '%' || l_value_col || '%';
+				
+					-- если партиции нет, то выполнить запрос на ее добавление
+					if l_a_cnt = 0
+						then 
+							l_sql_query:= 'alter table gl.' || l_trg_tbl_name || ' add partition ' || l_trg_tbl_name || '_' || l_value_col || ' values (' || '''' || l_value_col || '''' || ')';
+							execute l_sql_query;
+							-- логирование
+							perform meta_info.f_log('f_ee_gl_add_parts','PASSED', 'Добавлена партиция со значением: ' || l_value_col);
+							
+					end if;
+				
+				 --обработчик исключений
+				exception when
+					   others then
+							get STACKED diagnostics l_err_text = PG_EXCEPTION_CONTEXT;
+							--логирование
+							perform meta_info.f_log('f_ee_gl_add_parts','FAIL', l_err_text);
+						
+				end;
+			end loop;
+		
+	 --если партицирование имеет тип RANGE	
+	  elsif l_part_type = 'range'
+		then
+			--логирование
+			perform meta_info.f_log('f_ee_gl_add_parts','IN PROGRESS','метод партицирования - RANGE');
+		
+			 --получаем все месяца в таблице
+		    open cur for execute 'select distinct date_trunc(''month'',' || l_part_col || ') from ' || 'stg.' || lower(l_src_tbl_name);
+		   
+		   	l_return_message := 'added a range partition';
+		   
+		     --блок кода для добавления партиций 
+			loop
+			    fetch cur into l_s_dt; 	    
+			    exit when not found;
+			   
+			    begin 
+				    
+				    l_e_dt := l_s_dt + interval '1' month;
+				     --получаем количество партиций в заданном диапазоне
+				    select count(*) 
+					  into l_a_cnt 
+					  from pg_catalog.pg_partitions 
+					where partitionrangestart like '%' || l_s_dt || '%'  
+					  and  partitionrangeend like '%' || l_e_dt || '%'
+					  and  schemaname = 'gl'
+					  and tablename = l_trg_tbl_name;
+					 
+					--проверка условия с последующим выполнением операции для добавления новой партиции
+					if l_a_cnt = 0 
+					then
+				    	l_sql_query :=  'alter table gl.'||l_trg_tbl_name||' add partition start (timestamp '''||l_s_dt::text ||''') inclusive end (timestamp '''||l_e_dt::text ||''') exclusive';
+				        execute l_sql_query;
+				         --логирование 
+				        perform meta_info.f_log('f_ee_gl_add_parts','PASSED','Добавлена партиция со значением: ' || l_s_dt::text);
+				    end if;
+				
+				--обработка исключений
+			    exception 
+			        when others then
+			        	get STACKED diagnostics l_err_text = PG_EXCEPTION_CONTEXT;
+			        	--логирование
+			        	perform meta_info.f_log('f_ee_gl_add_parts','FAIL',l_err_text);
+			    	
+			    
+			    end;
+			end loop;
+		
+	else 
+		l_return_message := 'the partition method is not recognized';
+		--логирование
+		perform meta_info.f_log('f_ee_gl_add_parts','A DIFFERENT VALUE WAS EXPECTED', l_return_message);
+	end if;
 
-   -- логирование 
-   perform meta_info.f_log('f_ee_gl_add_parts','PASSED','Operation completed');
-  
-   return l_sql;
+return l_return_message;
+
 end;
-
 
 
 
@@ -107,7 +148,6 @@ EXECUTE ON ANY;
 
 -- Permissions
 
-ALTER FUNCTION meta_info.f_ee_gl_add_parts(numeric) OWNER TO root;
-GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(numeric) TO public;
-GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(numeric) TO root;
-GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(numeric) TO drp_meta_info_w;
+ALTER FUNCTION meta_info.f_ee_gl_add_parts(int4) OWNER TO drp;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(int4) TO public;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_add_parts(int4) TO drp;
