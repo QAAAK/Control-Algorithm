@@ -1,6 +1,6 @@
 -- DROP FUNCTION meta_info.f_ee_gl_set_stg_md(meta_info.ee_stg_md);
 
-CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_set_stg_md(p_gl_md_row meta_info.ee_stg_md)
+CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_set_stg_md(p_stg_md_row meta_info.ee_stg_md)
 	RETURNS int2
 	LANGUAGE plpgsql
 	VOLATILE
@@ -8,10 +8,11 @@ AS $$
 	
 	
 	
+	
 /* f_ee_gl_set_stg_md - функция, добавляющая новую запись в таблицу meta_info.f_ee_stg_md
   		   
    параметры функции:
-   			p_gl_md_row meta_info._ee_stg_md -- строка, которую добавить в таблицу
+   			p_stg_md_row meta_info._ee_stg_md -- строка, которую добавить в таблицу
    
    возвращаемое значение: результат о выполнении в виде числа (1 или 0)
       
@@ -28,11 +29,9 @@ begin
 	--логирование
 	perform meta_info.f_log('f_ee_gl_set_stg_md', 'RUNNING', 'none');
 	-- получаем строку для добавления новой записи в таблицу
-
-	--p_gl_md_row.id = nextval(pg_get_serial_sequence('ee_gl_md','id'));
-
+	p_stg_md_row.id = nextval(pg_get_serial_sequence('ee_stg_md','id'));
 	-- добавляем новую запись в таблицу
-	insert into meta_info.ee_gl_md select p_gl_md_row.*;
+	insert into meta_info.ee_stg_md select p_stg_md_row.*;
     commit;
     --логирование
     perform meta_info.f_log('f_ee_gl_set_stg_md', 'PASSED', 'Operation completed');
@@ -49,6 +48,7 @@ exception
    return 0;
   
 end;
+
 
 
 
