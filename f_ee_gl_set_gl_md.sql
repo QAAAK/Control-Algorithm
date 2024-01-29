@@ -7,7 +7,8 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_set_gl_md(p_gl_md_row meta_info.ee_
 AS $$
 	
 	
-/* f_сm_set_param - функция, добавляющая новую запись в таблицу meta_info.f_ee_gl_md
+	
+/* f_ee_gl_set_gl_md - функция, добавляющая новую запись в таблицу meta_info.f_ee_gl_md
   		   
    параметры функции:
    			p_gl_md_row meta_info._ee_gl_md -- строка, которую добавить в таблицу
@@ -46,6 +47,7 @@ exception
    return 0;
   
 end;
+
 
 
 
