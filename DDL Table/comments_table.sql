@@ -127,6 +127,68 @@ comment on column meta_info.tbl_load_log.crt_date is 'Дата создания 
 comment on column meta_info.tbl_load_log.sql_query is 'Сообщение об ошибке.';
 
 
+-- meta_info.dq_ldp 
+comment on table meta_info.dq_ldp is 'Таблица связей между таблицами (external-gl)';
+
+comment on column meta_info.dq_ldp.id is 'Идентификатор записи';
+comment on column meta_info.dq_ldp.rss_code is 'Код системы источника';
+comment on column meta_info.dq_ldp.src_schema_name is 'Схема таблицы источника';
+comment on column meta_info.dq_ldp.src_tbl_name is 'Имя таблицы источника';
+comment on column meta_info.dq_ldp.trg_tbl_name is 'Имя таблицы приемника';
+comment on column meta_info.dq_ldp.clmn_id is 'Наименования поля-идентификатора';
+comment on column meta_info.dq_ldp.status_d is 'Статус выполнения поиска потерянных записей (DELETE)';
+comment on column meta_info.dq_ldp.status_u is 'Статус выполнения поиска потерянных записей (UPDATE)';
+comment on column meta_info.dq_ldp.loss_cnt_d is 'Количество потерянных записей (DELETE)';
+comment on column meta_info.dq_ldp.loss_cnt_u is 'Количество потерянных записей (UPDATE)';
+comment on column meta_info.dq_ldp.is_enable_d is 'Активна ли проверка (DELETE) (1 – активна, 0 – неактивна)';
+comment on column meta_info.dq_ldp.is_enable_u is 'Активна ли проверка (UPDATE) (1 – активна, 0 – неактивна)';
+comment on column meta_info.dq_ldp.message_d is 'Сообщение о проведенной проверке потерянных записей (DELETE)';
+comment on column meta_info.dq_ldp.message_u is 'Сообщение о проведенной проверке потерянных записей (UPDATE)';
+comment on column meta_info.dq_ldp.check_d_dttm is 'Дата и время проверки (DELETE)';
+comment on column meta_info.dq_ldp.check_u_dttm is 'Дата и время проверки (UPDATE)';
+comment on column meta_info.dq_ldp.crt_date is 'Дата создания записи';
+
+
+--meta_info.dq_ldp_protocol
+comment on table meta_info.dq_ldp_protocol is 'Таблица-журнал исполняяемых проверок DQ';
+
+comment on column meta_info.dq_ldp_protocol.id is 'Идентификатор записи';
+comment on column meta_info.dq_ldp_protocol.trg_tbl_name is 'Имя таблицы источника';
+comment on column meta_info.dq_ldp_protocol.check_type is 'Тип проверки (DELETE/UPDATE)';
+comment on column meta_info.dq_ldp_protocol.date_start is 'Дата и время начала проверки';
+comment on column meta_info.dq_ldp_protocol.date_end is 'Дата и время окончания проверки';
+comment on column meta_info.dq_ldp_protocol.loss_cnt is 'Количество потерянных записей';
+comment on column meta_info.dq_ldp_protocol.status is 'Статус проверки';
+comment on column meta_info.dq_ldp_protocol.recovery_dttm is 'Дата и время восстановления потерянных записей';
+comment on column meta_info.dq_ldp_protocol.crt_date is 'Дата создания записи';
+
+
+--meta_info.dq_ldp_protocol_detail 
+comment on table meta_info.dq_ldp_protocol_detail is 'Таблица с потерянными идентификаторами записи';
+
+comment on column meta_info.dq_ldp_protocol_detail.id is 'Идентификатор записи';
+comment on column meta_info.dq_ldp_protocol_detail.protocol_id is 'Идентификатор записи в таблице dq_ldp_protocol';
+comment on column meta_info.dq_ldp_protocol_detail.loss_id is 'Идентификатор потерянной записи в таблице приемнике';
+comment on column meta_info.dq_ldp_protocol_detail.crt_dttm is 'Дата и время найденной записи';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
