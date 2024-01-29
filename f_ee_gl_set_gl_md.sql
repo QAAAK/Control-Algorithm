@@ -8,6 +8,7 @@ AS $$
 	
 	
 	
+	
 /* f_ee_gl_set_gl_md - функция, добавляющая новую запись в таблицу meta_info.f_ee_gl_md
   		   
    параметры функции:
@@ -20,20 +21,20 @@ AS $$
 */	
 	
 
-DECLARE
+declare
     
 l_err_text text; -- текст ошибки 
 
 begin
 	--логирование
-	perform meta_info.f_log('f_ee_gl_set_gl_md', 'RUNNING', 'none');
+	perform meta_info.f_log('f_ee_gl_set_gl_md', 'RUNNING', p_gl_md_row);
 	-- получаем строку для добавления новой записи в таблицу
 	p_gl_md_row.id = nextval(pg_get_serial_sequence('ee_gl_md','id'));
 	-- добавляем новую запись в таблицу
 	insert into meta_info.ee_gl_md select p_gl_md_row.*;
-    commit;
+    --commit;
     --логирование
-    perform meta_info.f_log('f_ee_gl_set_gl_md', 'SUCCESFUL', 'Operation completed');
+    perform meta_info.f_log('f_ee_gl_set_gl_md', 'PASSED', 'Operation completed');
     return 1;
 
 --обработка исключений
@@ -47,6 +48,7 @@ exception
    return 0;
   
 end;
+
 
 
 
