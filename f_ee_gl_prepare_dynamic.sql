@@ -9,6 +9,9 @@ AS $$
 	
 	
 	
+	
+	
+	
 
 /* f_ee_gl_prepare_dynamic - функция, которая перекладывает данные из одной в таблицы в другую
  						     на основе типа загрузки в meta_info.ee_gl_md
@@ -66,7 +69,7 @@ begin
     if l_a_part_col != '' 
      then
        -- создать новые партиции если необходимо
-       l_ret := meta_info.f_ee_gl_add_parts(p_a_id);
+       l_ret := meta_info.f_ee_gl_add_parts(p_id);
     end if;
   
    	 -- блок к кода в котором проверяется условие по какому сценарию происходит перекладка данных
@@ -90,14 +93,14 @@ begin
      end if;
     
      else   
-    	l_a_Stmt := '0';
+    	l_a_Stmt := 'There is no query due to an empty table';
     	
     end if;
   
    -- логирование
    perform meta_info.f_log('f_ee_gl_prepare_dynamic','PASSED',' SQL QUERY  - ' || l_a_Stmt);
-  
-   return l_a_Stmt;
+
+return l_a_Stmt;
   
 end;
 
@@ -106,5 +109,14 @@ end;
 
 
 
+
+
+
 $$
 EXECUTE ON ANY;
+
+-- Permissions
+
+ALTER FUNCTION meta_info.f_ee_gl_prepare_dynamic(numeric) OWNER TO drp;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_prepare_dynamic(numeric) TO public;
+GRANT ALL ON FUNCTION meta_info.f_ee_gl_prepare_dynamic(numeric) TO drp;
