@@ -12,6 +12,8 @@ AS $$
 	
 	
 	
+	
+	
 
 /* f_ee_gl_prepare_dynamic - функция, которая перекладывает данные из одной в таблицы в другую
  						     на основе типа загрузки в meta_info.ee_gl_md
@@ -93,7 +95,7 @@ begin
      end if;
     
      else   
-    	l_a_Stmt := 'There is no query due to an empty table';
+    	l_a_Stmt := '0';
     	
     end if;
   
@@ -103,6 +105,8 @@ begin
 return l_a_Stmt;
   
 end;
+
+
 
 
 
