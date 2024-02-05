@@ -11,6 +11,7 @@ AS $$
 	
 	
 	
+	
 /* f_ecm_set_tasks - Вспомогательная функция, которая добавляет записи о ходе выполнения функций в таблицу meta_info.log_func,
   					 а также обновляется таблицу ecm_tass
   		   
@@ -50,7 +51,7 @@ begin
 		when 'FAIL' then -1
 		when 'READY' then 1
 		else 1
-	end, '', 1, clock_timestamp(),
+	end, '', is_enable, clock_timestamp(),
 	case 
 		when rss_code = 'CDWH' then 'IPC'
 	    when rss_code = 'DLK' then 'DEI'
@@ -68,7 +69,7 @@ begin
 		when 'SUCCESSFUL' then 5
 		when 'FAIL' then -1
 		when 'READY' then 1
-	end, '', 1, clock_timestamp(),'SQL'
+	end, '', is_enable, clock_timestamp(),'SQL'
 	  from meta_info.ee_gl_md
 	where is_enable = 1  ;
 
@@ -116,6 +117,7 @@ exception
 	     
 	  return l_message;
 end;
+
 
 
 
