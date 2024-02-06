@@ -1,6 +1,6 @@
--- DROP FUNCTION meta_info.f_ecm_change_status(numeric, numeric, int8, numeric, text);
+-- DROP FUNCTION meta_info.f_ecm_ini_zen(numeric);
 
-CREATE OR REPLACE FUNCTION meta_info.f_ecm_change_status(p_id numeric, p_status numeric, p_ekm_id int8, p_load_cnt numeric, p_message text DEFAULT NULL::text)
+CREATE OR REPLACE FUNCTION meta_info.f_ecm_ini_zen(p_force numeric DEFAULT 0)
 	RETURNS text
 	LANGUAGE plpgsql
 	VOLATILE
@@ -8,98 +8,61 @@ AS $$
 	
 	
 	
-	
-	
-	
-	
-	
- /* f_ecm_change_status - функция, отвечающая за обновление таблицы meta_info.ee_stg_md
-   				      а также обновление meta_info.ecm_task на основе полученных аргументов
-   				      функции.
-  		   
-   	параметры функции:
-   					p_id - id обновляемой таблицы
-   	   				p_status - статус операции
-   	   				p_ekm_id -- id ЕКМ
-   	   				p_load_cnt - количество добавленных записей
-   	   				p_message - сообщение о загрузке (по умолчанию null)
-   			
-    возвращаемое значение: результат выполнения функции 
-   
-   
-   Автор: Санталов Д.В. SantalovDV@intech.rshb.ru
-   Дата создания: 29.12.2023
- */	
-
-declare 
-
-	l_md_id numeric; -- id таблицы
+declare
+	l_time time := current_time; -- текущее время
 	l_err_text text; -- текст ошибки
-	l_status text; -- change status
-	l_message text; -- переменная, содержащая возвращаемое значение
-
+	l_message text; -- текст возвращаемого значения
+	
 begin
 	-- логирование
-	perform meta_info.f_log('f_ecm_change_status','RUNNING','аргументы функции - {' || p_id || ',' || p_status || ',' || p_load_cnt || ',' || p_message || '}');
-	
-	-- на основе аргументов функции, обновляем таблицу meta_info.ecm_task
-	update meta_info.ecm_task set status = p_status, last_load_cnt = p_load_cnt, message = p_message, ekm_id = p_ekm_id
-	where id = p_id;
-	
-	-- кладем  переменную id по заданному условию
-	select md_id 
-	  into l_md_id
-	  from meta_info.ecm_task
-	where 1=1
-	  and id = p_id
-	  and md_table_name = 'EE_STG_MD'
-	limit 1;
-
-	begin	
-		-- проверяем полученное значение и изменяем переменную статусов с последующим обновлением записей
-		if l_md_id is not null
-			then 
-			    case
-				    when p_status = 1 then l_status := 'READY';
-				    when p_status = -1 then l_status := 'FAIL';
-				    when p_status = 5 then l_status := 'SUCCESFUL';
-				    when p_status = 2 then l_status := 'STARTED';
-				    else l_status := 'NOT DEFINED';
-				end case;
-				
-	   			update meta_info.ee_stg_md set last_load_status = l_status, last_load_cnt = p_load_cnt, message_text = p_message, last_load_dttm = current_timestamp 
-				where id = l_md_id;
+    perform meta_info.f_log('f_ecm_ini_zen','RUNNING','аргументы функции - {' || p_force || '}');
+	-- Проверка на корректное время запуска 
+	if p_force = 0 and l_time > '04:00:00'
+	 then
+	   l_message := 'Incorrect start time'; 
+	   -- логирование
+	   perform meta_info.f_log('f_ecm_ini_zen','COMPLETED EARLIER THAN EXPECTED', l_message);
+	  
+	   return l_message;
+	  
+    end if;		 
+	-- Блок программы, сдвигающий параметры и обновление таблицы 
+	  begin
+		-- обновление таблиц meta_info.ee_gl_md и meta_info.ee_stg_md
+			  update meta_info.ee_stg_md 
+				set last_load_status = 'READY' 
+			  where last_load_status in ('SUCCESSFUL','FAIL');
+									
+			  update meta_info.ee_gl_md 
+			  	set last_load_status = 'READY'
+			  where last_load_status in ('SUCCESSFUL','FAIL');
 		
-		else 
-		    l_message := 'There is no table with this id';
-		    -- логирование
-		    perform meta_info.f_log('f_ecm_change_status','COMPLETED EARLIER THAN EXPECTED',l_message);
+	   -- обработка исключений
+		exception 
+		   when others then
 		   
-			return l_message;
-		
-		end if;
-	
-	-- обработка исключений
-	exception 
-	  when others then
-		
-      get STACKED diagnostics l_err_text := PG_EXCEPTION_CONTEXT;      
-	  l_message := 'FAIL'; 
-	  -- логирование
-      perform meta_info.f_log('f_ecm_change_status','FAIL',l_err_text);
-     
-	  return l_message;
-	 
-    end;
-   
-    l_message := 'PASSED';
-    -- логирование
-    perform meta_info.f_log('f_ecm_change_status','PASSED','Operation completed');
-   
-    return l_message;
-   
+		   get STACKED diagnostics l_err_text := PG_EXCEPTION_CONTEXT;	   
+		   l_message := 'FAIL';		
+		   -- логирование
+    	   perform meta_info.f_log('f_ecm_ini_zen',l_message,l_err_text);
+					
+    	   return l_message;
+			 
+	   end;
+	--вызов функции для обновления таблицы meta_info.ecm_task
+	perform meta_info.f_ecm_set_tasks();	
+
+	l_message := 'PASSED';
+	--логирование
+	perform meta_info.f_log('f_ecm_ini_zen',l_message,'Operation completed');
+
+	return l_message;
+
 end;
-	
+			
+
+
+
 
 
 
@@ -113,5 +76,5 @@ EXECUTE ON ANY;
 
 -- Permissions
 
-ALTER FUNCTION meta_info.f_ecm_change_status(numeric, numeric, int8, numeric, text) OWNER TO drp;
-GRANT ALL ON FUNCTION meta_info.f_ecm_change_status(numeric, numeric, int8, numeric, text) TO drp;
+ALTER FUNCTION meta_info.f_ecm_ini_zen(numeric) OWNER TO drp;
+GRANT ALL ON FUNCTION meta_info.f_ecm_ini_zen(numeric) TO drp;
