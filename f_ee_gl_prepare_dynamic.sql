@@ -43,7 +43,7 @@ declare
      l_message text; -- возвращающая переменная
 begin
 	-- логирование
-	perform meta_info.f_log('f_ee_gl_prepare_dynamic','RUNNING','аргументы функции - {' || p_a_id || '}');
+	perform meta_info.f_log('f_ee_gl_prepare_dynamic','RUNNING','Аргументы функции - {' || p_a_id || '}');
 	
 	-- получаем в переменные необходимые данные для последующего добавления в таблицу
 	select load_type, src_tbl_name, trg_tbl_name, part_key_col, src_key_cols, src_cols, trg_cols
