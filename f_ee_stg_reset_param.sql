@@ -5,7 +5,21 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_reset_stg_param(p_id numeric DEFAULT N
 	LANGUAGE plpgsql
 	VOLATILE
 AS $$
-	
+
+	/* f_truncate_table - функция, сдвигающая дату загрузки в таблице meta_info.ee_stg_md 
+	  					  по умолчанию на один день, есть возможность отладки
+	  					  
+	  					 
+	   параметры функции:
+	   			p_id - Идентификатор таблицы 
+	   			p_date_from - количество дней свига prm_date_from
+	   			p_date_to - количество дней сдвига prm_date_to
+	   
+	   возвращаемое значение: void 
+	      
+	   Автор: Санталов Д.В. SantalovDV@intech.rshb.ru
+	   Дата создания: 07.02.2024
+*/	
 	
 
 declare 
