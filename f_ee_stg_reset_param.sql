@@ -5,8 +5,10 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_reset_stg_param(p_id numeric DEFAULT N
 	LANGUAGE plpgsql
 	VOLATILE
 AS $$
+	
+	
 
-	/* f_truncate_table - функция, сдвигающая дату загрузки в таблице meta_info.ee_stg_md 
+	/* f_ee_reset_param - функция, сдвигающая дату загрузки в таблице meta_info.ee_stg_md 
 	  					  по умолчанию на один день, есть возможность отладки
 	  					  
 	  					 
@@ -76,10 +78,13 @@ end;
 
 
 
+
+
 $$
 EXECUTE ON ANY;
 
 -- Permissions
 
 ALTER FUNCTION meta_info.f_ee_reset_stg_param(numeric, text, text) OWNER TO drp;
+GRANT ALL ON FUNCTION meta_info.f_ee_reset_stg_param(numeric, text, text) TO public;
 GRANT ALL ON FUNCTION meta_info.f_ee_reset_stg_param(numeric, text, text) TO drp;
