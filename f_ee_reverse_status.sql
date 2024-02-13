@@ -7,6 +7,10 @@ CREATE OR REPLACE FUNCTION meta_info.f_ecm_ini(p_force numeric DEFAULT 0)
 AS $$
 	
 	
+	
+	
+	
+	
 	 /* f_ecm_ini - корневая функция, сбрасывающая статусы в таблицы и обновляя таблицу 
 	    			для ЕКМ на основе метовых таблиц
   		   
@@ -30,7 +34,7 @@ declare
 	
 begin
 	-- логирование
-    perform meta_info.f_log('f_ecm_ini_zen','RUNNING','аргументы функции - {' || p_force || '}');
+    perform meta_info.f_log('f_ecm_ini','RUNNING','аргументы функции - {' || p_force || '}');
 	-- Проверка на корректное время запуска 
 	if p_force = 0 and l_time > '04:00:00'
 	 then
@@ -78,6 +82,10 @@ begin
 
 end;
 			
+
+
+
+
 
 
 

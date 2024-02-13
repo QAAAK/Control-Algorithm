@@ -12,6 +12,8 @@ AS $$
 	
 	
 	
+	
+	
 /* f_ecm_set_tasks - Вспомогательная функция, которая добавляет записи о ходе выполнения функций в таблицу meta_info.log_func,
   					 а также обновляется таблицу ecm_task
   		   
@@ -102,7 +104,7 @@ begin
 	
 	l_message := 'PASSED';
 	-- логирование
-	perform meta_info.f_log('f_ecm_set_tasks','PASSED','Operation completed');
+	perform meta_info.f_log('f_ecm_set_tasks',l_message,'Operation completed');
 	
     return l_message;
    
@@ -113,10 +115,12 @@ exception
 	  get STACKED diagnostics l_err_text := PG_EXCEPTION_CONTEXT;
 	  l_message := 'FAIL';	
 	  -- логирование
-	  perform meta_info.f_log('f_ecm_set_tasks','FAIL',l_err_text);
+	  perform meta_info.f_log('f_ecm_set_tasks',l_message,l_err_text);
 	     
 	  return l_message;
 end;
+
+
 
 
 
