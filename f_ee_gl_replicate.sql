@@ -10,6 +10,7 @@ AS $$
 	
 	
 	
+	
 /* f_ee_gl_replicate - функция, обновляющая таблицу логов загрузки meta_info.tbl_load_log, 
  					   а также запускающая процесс перекладки данных из схемы STG в схему GL
   		   
@@ -58,6 +59,9 @@ begin
 	      then
 			execute l_sql_text;	
 		    get diagnostics l_a_Cnt := ROW_COUNT;
+		   
+		 -- вызываем функцию удаления записей
+		 perform meta_info.f_dq_ldp_delete(l_a_tablename_trg);
 	
 		    --Очистить таблицу stg
 			perform  meta_info.f_truncate_table('stg.'||l_a_tablename_src);	    
@@ -93,6 +97,7 @@ begin
 	return -1;
 raise;
 end;
+
 
 
 
