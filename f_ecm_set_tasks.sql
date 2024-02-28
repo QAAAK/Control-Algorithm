@@ -45,7 +45,7 @@ begin
 	delete from meta_info.ecm_task where process_type in ('DLK_TO_STG', 'CDWH_TO_STG');
 
 	insert into meta_info.ecm_task (system_code, process_type, md_table_name, md_id, 
-	task_code, status, message, is_enable, last_dttm, task_type)
+	task_code, status, message, is_enable, last_dttm, task_type, prm_date_from, prm_date_to)
 	select 
 	rss_code, rss_code || '_TO_STG', 'EE_STG_MD', id, task_code, 
 	case last_load_status
@@ -57,9 +57,10 @@ begin
 	case 
 		when rss_code = 'CDWH' then 'IPC'
 	    when rss_code = 'DLK' then 'DEI'
-    end
-	  from meta_info.ee_stg_md
-	where rss_code in ('CDWH', 'DLK');
+    end, prm_date_from, prm_date_to
+	    from meta_info.ee_stg_md
+	where rss_code in ('CDWH', 'DLK')  
+		and is_enable = 1;
 
 	-- удаление записей по условию с последующим добавлением в таблицу meta_info.ecm_task
 	delete from meta_info.ecm_task where process_type = 'STG_TO_GL';
@@ -119,6 +120,7 @@ exception
 	     
 	  return l_message;
 end;
+
 
 
 
