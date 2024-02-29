@@ -14,6 +14,7 @@ AS $$
 	
 	
 	
+	
 /* f_ecm_set_tasks - Вспомогательная функция, которая добавляет записи о ходе выполнения функций в таблицу meta_info.log_func,
   					 а также обновляется таблицу ecm_task
   		   
@@ -52,6 +53,7 @@ begin
 		when 'SUCCESSFUL' then 5
 		when 'FAIL' then -1
 		when 'READY' then 1
+		when 'STARTED' then 2
 		else 1
 	end, '', is_enable, clock_timestamp(),
 	case 
@@ -72,6 +74,7 @@ begin
 		when 'SUCCESSFUL' then 5
 		when 'FAIL' then -1
 		when 'READY' then 1
+		when 'STARTED' then 2
 	end, '', is_enable, clock_timestamp(),'SQL'
 	  from meta_info.ee_gl_md
 	where is_enable = 1  ;
@@ -120,6 +123,7 @@ exception
 	     
 	  return l_message;
 end;
+
 
 
 
