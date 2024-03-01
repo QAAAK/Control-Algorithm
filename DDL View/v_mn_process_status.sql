@@ -22,7 +22,8 @@ AS SELECT DISTINCT et.process_type,
         CASE
             WHEN et.status = '-1'::integer THEN 1
             ELSE 0
-        END) AS status_fail
+        END) AS status_fail,
+    max(et.last_dttm) AS last_dttm
    FROM meta_info.ecm_task et
   GROUP BY et.process_type, et.system_code, et.task_type;
 

@@ -10,7 +10,9 @@ AS WITH t AS (
             esm.last_load_status AS status,
             et.message,
             et.prm_date_from,
-            et.prm_date_to
+            et.prm_date_to,
+            esm.last_load_cnt,
+            esm.last_load_dttm
            FROM meta_info.ecm_task et
              JOIN meta_info.ee_stg_md esm ON et.md_id = esm.id
         UNION ALL
@@ -22,7 +24,9 @@ AS WITH t AS (
             egm.last_load_status AS status,
             et.message,
             et.prm_date_from,
-            et.prm_date_to
+            et.prm_date_to,
+            egm.last_load_cnt,
+            egm.last_load_dttm
            FROM meta_info.ecm_task et
              JOIN meta_info.ee_gl_md egm ON et.md_id = egm.id
         )
@@ -34,7 +38,9 @@ AS WITH t AS (
     t.status,
     t.message,
     t.prm_date_from,
-    t.prm_date_to
+    t.prm_date_to,
+    t.last_load_cnt,
+    t.last_load_dttm
    FROM t;
 
 -- Permissions
