@@ -1,11 +1,11 @@
--- DROP FUNCTION meta_info.f_ee_stg_crt_view(int8);
+-- DROP FUNCTION meta_info.f_ee_stg_crt_view(int2);
 
-CREATE OR REPLACE FUNCTION meta_info.f_ee_stg_crt_view(p_force int8 DEFAULT NULL::bigint)
+CREATE OR REPLACE FUNCTION meta_info.f_ee_stg_crt_view(p_force int2)
 	RETURNS text
 	LANGUAGE plpgsql
 	VOLATILE
 AS $$
-	
+	 	
 	
 	
 	
@@ -50,7 +50,7 @@ begin
 	
 	l_message := 'PASSED';
 	-- логирование
-	perform meta_info.f_log('f_ee_stg_crt_view', l_message, 'OPeration completed');
+	perform meta_info.f_log('f_ee_stg_crt_view', l_message, 'Operation completed');
 
 return l_message;
 
@@ -75,12 +75,11 @@ end;
 
 
 
-
+ 
 $$
 EXECUTE ON ANY;
 
 -- Permissions
 
-ALTER FUNCTION meta_info.f_ee_stg_crt_view(int8) OWNER TO drp;
-GRANT ALL ON FUNCTION meta_info.f_ee_stg_crt_view(int8) TO public;
-GRANT ALL ON FUNCTION meta_info.f_ee_stg_crt_view(int8) TO drp;
+ALTER FUNCTION meta_info.f_ee_stg_crt_view(int2) OWNER TO drp;
+GRANT ALL ON FUNCTION meta_info.f_ee_stg_crt_view(int2) TO drp;
