@@ -1,4 +1,8 @@
--- Loading 'ee_gl_md' source...
+-- meta_info.ee_gl_md определение
+
+-- Drop table
+
+-- DROP TABLE meta_info.ee_gl_md;
 
 CREATE TABLE meta_info.ee_gl_md (
 	id bigserial NOT NULL,
@@ -15,8 +19,11 @@ CREATE TABLE meta_info.ee_gl_md (
 	last_load_dttm timestamp NULL,
 	last_load_status varchar(50) NULL,
 	last_load_cnt int4 NULL,
-	message_text varchar(512) NULL,
+	message_text text NULL,
 	crt_date timestamp NOT NULL DEFAULT clock_timestamp(),
+	part_type text NULL,
+	dt_begin timestamp NULL,
+	dt_end timestamp NULL,
 	CONSTRAINT pk_ee_gl_md PRIMARY KEY (id) DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
@@ -24,3 +31,7 @@ WITH (
 )
 DISTRIBUTED REPLICATED;
 
+-- Permissions
+
+ALTER TABLE meta_info.ee_gl_md OWNER TO drp;
+GRANT ALL ON TABLE meta_info.ee_gl_md TO drp;
