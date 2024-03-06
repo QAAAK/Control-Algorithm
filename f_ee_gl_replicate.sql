@@ -11,6 +11,8 @@ AS $$
 	
 	
 	
+	
+	
 /* f_ee_gl_replicate - функция, обновляющая таблицу логов загрузки meta_info.tbl_load_log, 
  					   а также запускающая процесс перекладки данных из схемы STG в схему GL
   		   
@@ -53,11 +55,19 @@ begin
    		
    		-- вызов функции для получения возвращаемого значения
 		l_sql_text := meta_info.f_ee_gl_prepare_dynamic(p_a_id);
+	
+	     -- обновляем таблицу статусом запущено
+	     update meta_info.ee_gl_md
+       	    set last_load_dttm = l_a_StartDt, last_load_status = 'STARTED',
+       	 		dt_begin = current_timestamp, dt_end = null
+	     where id=p_a_id;
 		
 		-- проверка условия для дальнейшей загрузки данных
 	    if l_sql_text != '0' 
 	      then
+	 		
 			execute l_sql_text;	
+		
 		    get diagnostics l_a_Cnt := ROW_COUNT;
 		   
 		 -- вызываем функцию удаления записей
@@ -71,7 +81,8 @@ begin
 	    insert into meta_info.tbl_load_log(load_type, src_tbl_name, trg_tbl_name, last_load_dttm, last_load_status, last_load_cnt, sql_query)
 	         values (l_a_loadtype, l_a_tablename_src, l_a_tablename_trg, l_a_StartDt, 'SUCCESSFUL', l_a_Cnt, l_sql_text);
 	    update meta_info.ee_gl_md
-	       	 set last_load_dttm = l_a_StartDt, last_load_status = 'SUCCESSFUL', last_load_cnt = l_a_Cnt
+	       	 set last_load_dttm = l_a_StartDt, last_load_status = 'SUCCESSFUL', last_load_cnt = l_a_Cnt,
+	       	 	 dt_end = current_timestamp
 		where id=p_a_id;
 		
 		-- логирование
@@ -88,7 +99,8 @@ begin
 	    insert into meta_info.tbl_load_log(load_type, src_tbl_name, trg_tbl_name, last_load_dttm, last_load_status, last_load_cnt, sql_query, message_text)
 	         values (l_a_loadtype, l_a_tablename_src, l_a_tablename_trg, l_a_StartDt, 'FAIL', l_a_Cnt, l_sql_text, l_err_text);
 	    update meta_info.ee_gl_md
-	       	 set last_load_dttm = l_a_StartDt, last_load_status = 'FAIL', last_load_cnt = l_a_Cnt, message_text = l_err_text
+	       	 set last_load_dttm = l_a_StartDt, last_load_status = 'FAIL', last_load_cnt = l_a_Cnt, message_text = l_err_text,
+	       	 	 dt_end = current_timestamp
 		where id=p_a_id;
 		
 		-- логирование
@@ -97,6 +109,8 @@ begin
 	return -1;
 raise;
 end;
+
+
 
 
 
