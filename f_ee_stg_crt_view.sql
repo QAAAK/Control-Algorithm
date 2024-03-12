@@ -7,8 +7,18 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_stg_crt_view(p_force int2)
 AS $$
 	 	
 	
-	
-	
+ /* 
+   f_ee_stg_crt_view - Функция, создающая view на основе метаданных таблицы ee_stg_md
+  		   
+   параметры : 
+   				p_force - служебный параметр для отладки
+   			
+   возвращаемое значение: результат выполнения функции 
+     
+   Автор: Санталов Д.В. SantalovDV@intech.rshb.ru
+   Дата создания: 29.02.2024
+*/	
+			
 	
 
 
