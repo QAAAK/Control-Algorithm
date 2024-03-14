@@ -13,6 +13,7 @@ AS $$
 	
 	
 	
+	
 /* f_ee_gl_replicate - функция, обновляющая таблицу логов загрузки meta_info.tbl_load_log, 
  					   а также запускающая процесс перекладки данных из схемы STG в схему GL
   		   
@@ -82,7 +83,7 @@ begin
 	         values (l_a_loadtype, l_a_tablename_src, l_a_tablename_trg, l_a_StartDt, 'SUCCESSFUL', l_a_Cnt, l_sql_text);
 	    update meta_info.ee_gl_md
 	       	 set last_load_dttm = l_a_StartDt, last_load_status = 'SUCCESSFUL', last_load_cnt = l_a_Cnt,
-	       	 	 dt_end = current_timestamp
+	       	 	 dt_end = current_timestamp, message_text = null
 		where id=p_a_id;
 		
 		-- логирование
@@ -109,6 +110,7 @@ begin
 	return -1;
 raise;
 end;
+
 
 
 
