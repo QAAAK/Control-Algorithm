@@ -66,7 +66,7 @@ begin
     if l_a_part_col != '' 
      then
        -- создать новые партиции если необходимо
-       l_ret := meta_info.f_ee_gl_add_parts(p_id);
+       l_ret := meta_info.f_ee_gl_add_parts(p_a_id);
     end if;
   
    	 -- блок к кода в котором проверяется условие по какому сценарию происходит перекладка данных
