@@ -1,267 +1,120 @@
--- DROP FUNCTION meta_info.f_ee_gl_replicate(numeric);
+-- DROP FUNCTION meta_info.f_ecm_ini(numeric);
 
- 
-
-CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_replicate(p_a_id numeric)
-
-RETURNS int4
-
-LANGUAGE plpgsql
-
-VOLATILE
-
+CREATE OR REPLACE FUNCTION meta_info.f_ecm_ini(p_force numeric DEFAULT 0)
+	RETURNS text
+	LANGUAGE plpgsql
+	VOLATILE
 AS $$
+	
+	
+	
+	
+	
 
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
-/* f_ee_gl_replicate - функция, обновляющая таблицу логов загрузки meta_info.tbl_load_log, 
-
-а также запускающая процесс перекладки данных из схемы STG в схему GL
-
- 
-
-параметры функции:
-
-p_a_id - id таблицы для переноса данных
-
- 
-
-возвращаемое значение: количество перенесенных строк 
-
- 
-
-Автор: Санталов Д.В. SantalovDV@intech.rshb.ru
-
-Дата создания: 29.11.2023
-
-*/
-
- 
-
- 
-
+	
+/* f_ecm_ini - корневая функция, сбрасывающая статусы в таблицы и обновляя таблицу 
+	    			для ЕКМ на основе метовых таблиц
+  		   
+   	параметры функции:
+   					p_force - параметр для отладки
+   			
+    возвращаемое значение: результат выполнения функции 
+   
+   
+   Автор: Санталов Д.В. SantalovDV@intech.rshb.ru
+   Дата создания: 07.02.2024
+ */	
+	
+	
+	
+	
 declare
-
-l_a_StartDt timestamp; -- Время начала операции
-
-l_a_Cnt int := 0; -- Количество перенесенных строк
-
-l_a_tablename_trg text; -- имя таблицы-приемника
-
-l_a_tablename_src text; -- имя таблицы-источника
-
-l_a_loadtype numeric; -- тип загрузки
-
-l_sql_text text; -- переменная, которая принимает возвращаемое значение функции 
-
-l_err_text text; -- текст ошибки
-
- 
-
+	l_time time := current_time; -- текущее время
+	l_err_text text; -- текст ошибки
+	l_message text; -- текст возвращаемого значения
+	cur refcursor; -- курсор
+	l_tbl_name text; -- имя таблицы
+	
 begin
+	-- логирование
+    perform meta_info.f_log('f_ecm_ini','RUNNING','аргументы функции - {' || p_force || '}');
+	-- Проверка на корректное время запуска 
+	if p_force = 0 and l_time > '04:00:00'
+	 then
+	   l_message := 'Incorrect start time'; 
+	   -- логирование
+	   perform meta_info.f_log('f_ecm_ini','COMPLETED EARLIER THAN EXPECTED', l_message);
+	  
+	   return l_message;
+	  
+    end if;		 
+	-- Блок программы, сдвигающий параметры и обновление таблицы 
+	  begin
+		-- обновление таблиц meta_info.ee_gl_md и meta_info.ee_stg_md
+			  update meta_info.ee_stg_md 
+				set last_load_status = 'READY' 
+			  where last_load_status in ('SUCCESSFUL','FAIL');
+									
+			  update meta_info.ee_gl_md 
+			  	set last_load_status = 'READY'
+			  where last_load_status in ('SUCCESSFUL','FAIL');
+			 
+		-- вызов функции смены времени запуска ЕКМ
+		perform meta_info.f_ee_reset_stg_param();
+		
+	   -- обработка исключений
+		exception 
+		   when others then
+		   
+		   get STACKED diagnostics l_err_text := PG_EXCEPTION_CONTEXT;	   
+		   l_message := 'FAIL';		
+		   -- логирование
+    	   perform meta_info.f_log('f_ecm_ini',l_message,l_err_text);
+					
+    	   return l_message;
+			 
+	   end;
+	  	
+	--вызов функции для обновления таблицы meta_info.ecm_task
+	perform meta_info.f_ecm_set_tasks();	
+	
+	-- блок кода, выполняющий очистку таблиц уровня Stage
+	open cur for execute 'select stg_tbl_name from meta_info.ee_stg_md where is_enable = 1';
+					
+	loop 
+		fetch cur into l_tbl_name;
+		exit when not found;
+				
+		begin	
+			-- вызов функции очистки
+			perform meta_info.f_truncate_table('stg.'||l_tbl_name);
+			-- обработчик ошибок
+			exception when
+				others then
+					get STACKED diagnostics l_err_text = PG_EXCEPTION_CONTEXT;
+					--логирование
+					perform meta_info.f_log('f_ecm_ini',l_message,l_err_text);		
+			end;
+		
+	end loop;
 
---логирование
+	l_message := 'PASSED';
 
-perform meta_info.f_log('f_ee_gl_replicate','RUNNING', 'Аргументы функции - {' || p_a_id || '}');
+	--логирование
+	perform meta_info.f_log('f_ecm_ini',l_message,'Operation completed');
 
- 
-
--- извлекаем данные для дальнейшей загруки 
-
-select load_type, trg_tbl_name, src_tbl_name
-
-into l_a_loadtype, l_a_tablename_trg, l_a_tablename_src
-
-from meta_info.ee_gl_md
-
-where id=p_a_id;
-
- 
-
-begin
-
--- обновление статуса загруки 
-
-l_a_StartDt := clock_timestamp();
-
-update meta_info.ee_gl_md
-
-set last_load_dttm = l_a_StartDt, last_load_status = 'READY', last_load_cnt = 0
-
-where id=p_a_id;
+	return l_message;
 
 end;
+			
 
- 
 
--- вызов функции для получения возвращаемого значения
-
-l_sql_text := meta_info.f_ee_gl_prepare_dynamic(p_a_id);
-
- 
-
--- обновляем таблицу статусом запущено
-
-update meta_info.ee_gl_md
-
-set last_load_dttm = l_a_StartDt, last_load_status = 'STARTED',
-
-dt_begin = current_timestamp, dt_end = null
-
-where id=p_a_id;
-
- 
-
--- проверка условия для дальнейшей загрузки данных
-
-if l_sql_text != '0'
-
-then
-
- 
-
-execute l_sql_text;
-
- 
-
-get diagnostics l_a_Cnt := ROW_COUNT;
-
- 
-
--- вызываем функцию удаления записей
-
-perform meta_info.f_dq_ldp_delete(l_a_tablename_trg);
-
- 
-
---Очистить таблицу stg
-
-perform meta_info.f_truncate_table('stg.'||l_a_tablename_src);
-
-end if;
-
- 
-
--- добавление статуса успешной загрузки в таблицу логов
-
-insert into meta_info.tbl_load_log(load_type, src_tbl_name, trg_tbl_name, last_load_dttm, last_load_status, last_load_cnt, sql_query)
-
-values (l_a_loadtype, l_a_tablename_src, l_a_tablename_trg, l_a_StartDt, 'SUCCESSFUL', l_a_Cnt, l_sql_text);
-
-update meta_info.ee_gl_md
-
-set last_load_dttm = l_a_StartDt, last_load_status = 'SUCCESSFUL', last_load_cnt = l_a_Cnt,
-
-dt_end = current_timestamp, message_text = null
-
-where id=p_a_id;
-
- 
-
--- логирование
-
-perform meta_info.f_log('f_ee_gl_replicate','PASSED', 'Количество перенесенных строк - ' || l_a_Cnt);
-
- 
-
-return l_a_Cnt;
-
- 
-
--- обработка исключений
-
-exception when others then
-
-get STACKED diagnostics l_err_text = PG_EXCEPTION_CONTEXT;
-
-raise notice 'context: >>%<<', l_err_text;
-
- 
-
--- добавление статуса провальной загрузки в таблицу логов 
-
-insert into meta_info.tbl_load_log(load_type, src_tbl_name, trg_tbl_name, last_load_dttm, last_load_status, last_load_cnt, sql_query, message_text)
-
-values (l_a_loadtype, l_a_tablename_src, l_a_tablename_trg, l_a_StartDt, 'FAIL', l_a_Cnt, l_sql_text, l_err_text);
-
-update meta_info.ee_gl_md
-
-set last_load_dttm = l_a_StartDt, last_load_status = 'FAIL', last_load_cnt = l_a_Cnt, message_text = l_err_text,
-
-dt_end = current_timestamp
-
-where id=p_a_id;
-
- 
-
--- логирование
-
-perform meta_info.f_log('f_ee_gl_replicate','FAIL', l_err_text);
-
- 
-
-return -1;
-
-raise;
-
-end;
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
-
- 
 
 $$
-
 EXECUTE ON ANY;
-
- 
 
 -- Permissions
 
- 
-
-ALTER FUNCTION meta_info.f_ee_gl_replicate(numeric) OWNER TO drp;
-
-GRANT ALL ON FUNCTION meta_info.f_ee_gl_replicate(numeric) TO public;
-
-GRANT ALL ON FUNCTION meta_info.f_ee_gl_replicate(numeric) TO drp;
-
- 
+ALTER FUNCTION meta_info.f_ecm_ini(numeric) OWNER TO drp;
+GRANT ALL ON FUNCTION meta_info.f_ecm_ini(numeric) TO public;
+GRANT ALL ON FUNCTION meta_info.f_ecm_ini(numeric) TO drp;
