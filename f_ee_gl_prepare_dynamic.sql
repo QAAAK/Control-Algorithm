@@ -1,3 +1,4 @@
+
 -- DROP FUNCTION meta_info.f_ee_gl_prepare_dynamic(numeric);
 
 CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_prepare_dynamic(p_a_id numeric)
@@ -5,12 +6,6 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_prepare_dynamic(p_a_id numeric)
 	LANGUAGE plpgsql
 	VOLATILE
 AS $$
-	
-	
-	
-	
-	
-	
 	
 	
 	
@@ -84,12 +79,12 @@ begin
                  
      elsif l_a_loadtype = 2 -- 
       then      
-			l_a_Stmt := 'delete from gl.'||l_a_tablename_trg||' where '||l_a_pk_key||' IN (select '||l_a_pk_key||' from stg.'||l_a_tablename_src||');'
-		    ||chr(10)||'insert into gl.'||l_a_tablename_trg|| ' (' || l_src_cols || ') select ' || l_src_cols || ' from stg.'||l_a_tablename_src||';';
+			l_a_Stmt := 'delete from gl.'||l_a_tablename_trg||' where ('||l_a_pk_key||') IN (select '||l_a_pk_key||' from stg.'||l_a_tablename_src||');'
+		    ||chr(10)||'insert into gl.'||l_a_tablename_trg|| ' (' || l_src_cols || ') (select ' || l_src_cols || ' from stg.'||l_a_tablename_src||');';
 		   
      elsif l_a_loadtype = 4
        then 
-       	    l_a_Stmt := 'delete from gl.'||l_a_tablename_trg||' where '||l_a_pk_key||' IN (select '||l_a_pk_key||' from stg.'||l_a_tablename_src||');'
+       	    l_a_Stmt := 'delete from gl.'||l_a_tablename_trg||' where ('||l_a_pk_key||') IN (select '||l_a_pk_key||' from stg.'||l_a_tablename_src||');'
 		    ||chr(10)||'insert into gl.'||l_a_tablename_trg|| ' (' || l_src_cols || ') select ' || l_src_cols || ' from stg.'||l_a_tablename_src||' 
 			where w$optype = 0;';			
      end if;
@@ -105,6 +100,8 @@ begin
 return l_a_Stmt;
   
 end;
+
+
 
 
 
