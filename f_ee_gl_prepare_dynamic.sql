@@ -48,7 +48,7 @@ begin
 	  and id = p_a_id;
 	
 	 -- запрос с последующей проверкой условия
-    execute 'select count(*) from ' || 'stg.' || lower(l_a_tablename_src) || ' limit 1'
+    execute 'with t as (select * from ' || 'stg.' || lower(l_a_tablename_src) || ' limit 1) select count(*) from t '
     into strict l_a_cnt;
    
     if l_a_cnt > 0
