@@ -1,6 +1,6 @@
 -- DROP FUNCTION meta_info.f_ee_reset_stg_param(numeric, text, text);
 
-CREATE OR REPLACE FUNCTION meta_info.f_ee_reset_stg_param(p_id numeric DEFAULT NULL::numeric, p_date_from text DEFAULT NULL::text, p_date_to text DEFAULT NULL::text)
+CREATE OR REPLACE FUNCTION meta_info.f_ee_reset_stg_param(p_id numeric DEFAULT NULL::numeric, p_date_from date DEFAULT NULL::text, p_date_to date DEFAULT NULL::text)
 	RETURNS text
 	LANGUAGE plpgsql
 	VOLATILE
