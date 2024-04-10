@@ -16,7 +16,7 @@ CREATE TABLE meta_info.dq_ldp (
 	loss_qnt_d numeric NULL,
 	loss_qnt_u numeric NULL,
 	is_enable_d numeric(1) NOT NULL DEFAULT 1,
-	id_enable_u numeric(1) NOT NULL DEFAULT 1,
+	is_enable_u numeric(1) NOT NULL DEFAULT 1,
 	message_d text NULL,
 	message_u text NULL,
 	check_d_dttm timestamp NULL,
