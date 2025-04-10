@@ -5,12 +5,7 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_set_stg_md(p_stg_md_row meta_info.e
 	LANGUAGE plpgsql
 	VOLATILE
 AS $$
-	
-	
-	
-	
-	
-	
+		
 /* f_ee_gl_set_stg_md - функция, добавляющая новую запись в таблицу meta_info.f_ee_stg_md
   		   
    параметры функции:
