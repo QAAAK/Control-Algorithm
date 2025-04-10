@@ -6,14 +6,7 @@ CREATE OR REPLACE FUNCTION meta_info.f_ee_gl_replicate(p_a_id numeric)
 	VOLATILE
 AS $$
 	
-	
-	
-	
-	
-	
-	
-	
-	
+		
 /* f_ee_gl_replicate - функция, обновляющая таблицу логов загрузки meta_info.tbl_load_log, 
  					   а также запускающая процесс перекладки данных из схемы STG в схему GL
   		   
