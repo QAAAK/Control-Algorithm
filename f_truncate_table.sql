@@ -5,12 +5,7 @@ CREATE OR REPLACE FUNCTION meta_info.f_truncate_table(p_tbl_name text)
 	LANGUAGE plpgsql
 	VOLATILE
 AS $$
-	
-	
-	
-	
-	
-	
+		
 /* f_truncate_table - вспомогательная функция очистки таблицы
   		   
    параметры функции:
